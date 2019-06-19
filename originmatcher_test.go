@@ -32,6 +32,34 @@ func TestAll(t *testing.T) {
 		matches   []string
 		unmatches []string
 	}{
+		{"*", []string{
+			"http://localhost",
+			"http://localhost:3000",
+			"https://localhost",
+			"https://localhost:3000",
+			"http://example.com",
+			"http://example.com:80",
+			"https://example.com",
+			"https://example.com:443",
+			"http://www.example.com",
+			"http://www.example.com:80",
+			"https://www.example.com",
+			"https://www.example.com:443",
+		}, nil},
+		{"*,*", []string{
+			"http://localhost",
+			"http://localhost:3000",
+			"https://localhost",
+			"https://localhost:3000",
+			"http://example.com",
+			"http://example.com:80",
+			"https://example.com",
+			"https://example.com:443",
+			"http://www.example.com",
+			"http://www.example.com:80",
+			"https://www.example.com",
+			"https://www.example.com:443",
+		}, nil},
 		{"*.example.com", []string{
 			"http://a.example.com",
 			"http://a.example.com:80",
