@@ -301,6 +301,11 @@ func Parse(s string) (T, error) {
 	t := T{
 		origins: []origin{},
 	}
+	// strings.Split("", ",") == [""]
+	// which results in invalid spec
+	if s == "" {
+		return t, nil
+	}
 	specs := strings.Split(s, ",")
 	for _, spec := range specs {
 		origin, err := parseSingle(spec)
