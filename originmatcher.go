@@ -187,8 +187,13 @@ func parseHost(s string) []string {
 	}
 
 	if len(labels) == 1 {
-		// Special case
-		if labels[0] != "*" {
+		// Allow special case "*"
+		if labels[0] == "*" {
+			return labels
+		}
+		// Otherwise disallow any "*" in host
+		// Thus allow "localhost"
+		if strings.ContainsRune(labels[0], '*') {
 			return nil
 		}
 		return labels
