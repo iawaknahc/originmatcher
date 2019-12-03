@@ -211,6 +211,16 @@ func TestAll(t *testing.T) {
 			"http://www.example.com:3000",
 			"http://b.a.example.com",
 		}},
+
+		{"test.127.0.0.1.xip.io", []string{
+			"http://test.127.0.0.1.xip.io",
+			"https://test.127.0.0.1.xip.io",
+		}, []string{
+			"http://127.0.0.1",
+			"https://127.0.0.1",
+			"http://test.127.0.0.1.xip.io:8080",
+			"https://test.127.0.0.1.xip.io:8080",
+		}},
 	}
 	for _, c := range cases {
 		o, err := Parse(c.input)

@@ -12,7 +12,7 @@ import (
 )
 
 var portRe *regexp.Regexp = regexp.MustCompile(`^:(\d{1,5})$`)
-var wildcardLabelRe *regexp.Regexp = regexp.MustCompile(`^[a-zA-Z*][-a-zA-Z0-9*]*[a-zA-Z0-9*]?$`)
+var wildcardLabelRe *regexp.Regexp = regexp.MustCompile(`^[a-zA-Z0-9*][-a-zA-Z0-9*]*[a-zA-Z0-9*]?$`)
 
 type origin struct {
 	Protocol     string
