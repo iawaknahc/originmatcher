@@ -302,20 +302,25 @@ func parseSingle(s string) (origin, error) {
 }
 
 // Parse parses s into T.
-func Parse(s string) (T, error) {
-	t := T{
-		origins: []origin{},
-	}
+func Parse(s string) (*T, error) {
 	// strings.Split("", ",") == [""]
 	// which results in invalid spec
 	if s == "" {
-		return t, nil
+		return &T{
+			origins: []origin{},
+		}, nil
 	}
-	specs := strings.Split(s, ",")
+	return New(strings.Split(s, ","))
+}
+
+func New(specs []string) (*T, error) {
+	t := &T{
+		origins: []origin{},
+	}
 	for _, spec := range specs {
 		origin, err := parseSingle(spec)
 		if err != nil {
-			return t, err
+			return nil, err
 		}
 		t.origins = append(t.origins, origin)
 	}

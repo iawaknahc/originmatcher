@@ -243,3 +243,35 @@ func TestAll(t *testing.T) {
 		}
 	}
 }
+
+func TestNew(t *testing.T) {
+	matcher, err := New(nil)
+	if err != nil {
+		t.Errorf("err: %v\n", err)
+	}
+
+	b := matcher.MatchOrigin("http://localhost:3000")
+	if b {
+		t.Errorf("nil specs should match nothing\n")
+	}
+
+	matcher, err = New([]string{})
+	if err != nil {
+		t.Errorf("err: %v\n", err)
+	}
+
+	b = matcher.MatchOrigin("http://localhost:3000")
+	if b {
+		t.Errorf("empty specs should match nothing\n")
+	}
+
+	matcher, err = New([]string{"http://localhost:3000"})
+	if err != nil {
+		t.Errorf("err: %v\n", err)
+	}
+
+	b = matcher.MatchOrigin("http://localhost:3000")
+	if !b {
+		t.Errorf("should match\n")
+	}
+}
