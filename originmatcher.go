@@ -132,17 +132,6 @@ func (t *T) MatchOrigin(s string) bool {
 	return false
 }
 
-func splitHostPort(s string) (host string, port string) {
-	i := strings.IndexRune(s, ':')
-	if i >= 0 {
-		host = s[:i]
-		port = s[i:]
-	} else {
-		host = s
-	}
-	return
-}
-
 // assume s is a valid label
 func labelToRegexpSource(s string) string {
 	leading := "[a-zA-Z]"
