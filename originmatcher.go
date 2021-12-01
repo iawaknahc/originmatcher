@@ -196,8 +196,8 @@ func parseHost(s string) []string {
 		if starCount > 0 && expectNoMoreStar {
 			return nil
 		}
-		if i >= length-2 && i <= length-1 {
-			// The last 2 labels must have no stars
+		if i == length-1 {
+			// The last label must have no stars
 			if starCount > 0 {
 				return nil
 			}
@@ -220,7 +220,7 @@ func parseHost(s string) []string {
 	return labels
 }
 
-func parseSingle(s string) (origin, error) {
+func parseSingle(s string) (*origin, error) {
 	o := origin{}
 
 	if strings.HasPrefix(s, "http://") {
@@ -233,7 +233,7 @@ func parseSingle(s string) (origin, error) {
 
 	u, err := url.Parse(fmt.Sprintf("https://%v", s))
 	if err != nil {
-		return o, err
+		return nil, err
 	}
 
 	o.Port = u.Port()
@@ -248,17 +248,17 @@ func parseSingle(s string) (origin, error) {
 	} else {
 		labels := parseHost(hostname)
 		if labels == nil {
-			return o, fmt.Errorf("invalid host")
+			return nil, fmt.Errorf("invalid host: %v", hostname)
 		}
 		o.Labels = labels
 		re, err := regexp.Compile(labelsToRegexpSource(labels))
 		if err != nil {
-			return o, fmt.Errorf("internal error: %v", err)
+			return nil, fmt.Errorf("internal error: %v", err)
 		}
 		o.LabelsRegexp = re
 	}
 
-	return o, nil
+	return &o, nil
 }
 
 // Parse parses s into T, where s is comma-separated origin specs.
@@ -282,11 +282,26 @@ func New(specs []string) (*T, error) {
 		origins: []origin{},
 	}
 	for _, spec := range specs {
-		origin, err := parseSingle(spec)
+		o, err := parseSingle(spec)
 		if err != nil {
 			return nil, err
 		}
-		t.origins = append(t.origins, origin)
+		t.origins = append(t.origins, *o)
 	}
 	return t, nil
+}
+
+// CheckValidSpecStrict checks if spec is valid and does not contain extra information.
+func CheckValidSpecStrict(spec string) (err error) {
+	o, err := parseSingle(spec)
+	if err != nil {
+		return
+	}
+
+	if o.String() != spec {
+		err = fmt.Errorf("%v is not strict", spec)
+		return
+	}
+
+	return
 }

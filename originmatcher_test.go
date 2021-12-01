@@ -318,3 +318,41 @@ func TestAcceptUncommonHostname(t *testing.T) {
 		t.Errorf("%v != %v", matcher.String(), "XXXX")
 	}
 }
+
+func TestCheckValidSpecStrict(t *testing.T) {
+	validCases := []string{
+		"",
+		"*",
+		"127.0.0.1",
+		"127.0.0.1:3000",
+		"localhost",
+		"localhost:3000",
+		"[::1]",
+		"[::1]:3000",
+		"*.localhost",
+		"http://*.localhost",
+		"https://*.localhost",
+	}
+	for _, c := range validCases {
+		err := CheckValidSpecStrict(c)
+		if err != nil {
+			t.Errorf("%v: err: %v\n", c, err)
+		}
+	}
+
+	invalidCases := []string{
+		"a.*",
+		"*.*",
+		"*a*.com",
+		"127.0.0.1/",
+		"127.0.0.1?q",
+		"127.0.0.1#f",
+		"127.0.0.1/?q#f",
+	}
+	for _, c := range invalidCases {
+		err := CheckValidSpecStrict(c)
+		if err == nil {
+			t.Errorf("expected %v to be invalid\n", c)
+		}
+	}
+}
