@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -122,7 +121,8 @@ func (t *T) String() string {
 }
 
 // MatchOrigin tells whether s is an allowed origin.
-// s is expected to the value of HTTP header Origin
+// s typically should be the value of HTTP header "Origin".
+// MatchOrigin is lenient that extra userinfo, path , query or fragment in s are ignored silently.
 func (t *T) MatchOrigin(s string) bool {
 	for _, o := range t.origins {
 		if o.MatchOrigin(s) {
@@ -242,35 +242,22 @@ func parseSingle(s string) (origin, error) {
 		s = strings.TrimPrefix(s, "https://")
 	}
 
-	r, _ := utf8.DecodeRuneInString(s)
-	if r == utf8.RuneError {
-		return o, fmt.Errorf("empty host")
+	u, err := url.Parse(fmt.Sprintf("https://%v", s))
+	if err != nil {
+		return o, err
 	}
 
-	if r == '[' {
-		i := strings.IndexRune(s, ']')
-		if i < 0 {
-			return o, fmt.Errorf("invalid IPv6 host")
+	o.Port = u.Port()
+
+	hostname := u.Hostname()
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.To4() != nil {
+			o.IPv4 = hostname
+		} else {
+			o.IPv6 = hostname
 		}
-		ipv6 := s[:i]
-		ip := net.ParseIP(ipv6)
-		if ip == nil {
-			return o, fmt.Errorf("invalid IPv6 host")
-		}
-		o.IPv6 = ipv6
-		s = s[i+1:]
-	} else if r >= '0' && r <= '9' {
-		ipv4, port := splitHostPort(s)
-		s = port
-		ip := net.ParseIP(ipv4)
-		if ip == nil {
-			return o, fmt.Errorf("invalid IPv4 host")
-		}
-		o.IPv4 = ipv4
 	} else {
-		host, port := splitHostPort(s)
-		s = port
-		labels := parseHost(host)
+		labels := parseHost(hostname)
 		if labels == nil {
 			return o, fmt.Errorf("invalid host")
 		}
@@ -282,26 +269,10 @@ func parseSingle(s string) (origin, error) {
 		o.LabelsRegexp = re
 	}
 
-	if s != "" {
-		matches := portRe.FindStringSubmatch(s)
-		if matches == nil {
-			return o, fmt.Errorf("invalid port")
-		}
-		portStr := matches[1]
-		i, err := strconv.ParseInt(portStr, 10, 64)
-		if err != nil {
-			return o, fmt.Errorf("invalid port")
-		}
-		if i < 0 || i > 65535 {
-			return o, fmt.Errorf("invalid port")
-		}
-		o.Port = portStr
-	}
-
 	return o, nil
 }
 
-// Parse parses s into T.
+// Parse parses s into T, where s is comma-separated origin specs.
 func Parse(s string) (*T, error) {
 	// strings.Split("", ",") == [""]
 	// which results in invalid spec
@@ -313,6 +284,10 @@ func Parse(s string) (*T, error) {
 	return New(strings.Split(s, ","))
 }
 
+// New creates a T from a slice of origin spec.
+// An origin spec consist of a mandatory host, with optionally scheme and port.
+// As a special case, "*" matches any origin.
+// An origin spec is lenient that extra userinfo, path, query or fragment are ignored silently.
 func New(specs []string) (*T, error) {
 	t := &T{
 		origins: []origin{},

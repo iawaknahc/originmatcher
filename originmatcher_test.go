@@ -221,6 +221,22 @@ func TestAll(t *testing.T) {
 			"http://test.127.0.0.1.xip.io:8080",
 			"https://test.127.0.0.1.xip.io:8080",
 		}},
+
+		{"127.0.0.1", []string{
+			"http://127.0.0.1",
+			"https://127.0.0.1",
+		}, []string{
+			"http://localhost",
+			"https://localhost",
+		}},
+
+		{"[::1]", []string{
+			"http://[::1]",
+			"https://[::1]",
+		}, []string{
+			"http://localhost",
+			"https://localhost",
+		}},
 	}
 	for _, c := range cases {
 		o, err := Parse(c.input)
@@ -273,5 +289,21 @@ func TestNew(t *testing.T) {
 	b = matcher.MatchOrigin("http://localhost:3000")
 	if !b {
 		t.Errorf("should match\n")
+	}
+}
+
+func TestLeniency(t *testing.T) {
+	matcher, err := Parse("http://localhost:3000/a?a=b#a")
+	if err != nil {
+		t.Errorf("err: %v\n", err)
+	}
+
+	b := matcher.MatchOrigin("http://localhost:3000/b")
+	if !b {
+		t.Errorf("should match\n")
+	}
+
+	if matcher.String() != "http://localhost:3000" {
+		t.Errorf("%v != %v", matcher.String(), "http://localhost:3000")
 	}
 }
