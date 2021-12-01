@@ -307,3 +307,14 @@ func TestLeniency(t *testing.T) {
 		t.Errorf("%v != %v", matcher.String(), "http://localhost:3000")
 	}
 }
+
+func TestAcceptUncommonHostname(t *testing.T) {
+	matcher, err := Parse("XXXX")
+	if err != nil {
+		t.Errorf("err: %v\n", err)
+	}
+
+	if matcher.String() != "XXXX" {
+		t.Errorf("%v != %v", matcher.String(), "XXXX")
+	}
+}
