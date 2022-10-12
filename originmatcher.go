@@ -31,20 +31,45 @@ func (o *origin) MatchOrigin(s string) bool {
 	if err != nil {
 		return false
 	}
+
 	if o.isSpecialCase() {
 		return true
 	}
 
-	if o.Protocol != "" {
-		if o.Protocol != u.Scheme {
-			return false
-		}
-	} else {
-		if u.Scheme != "http" && u.Scheme != "https" {
-			return false
+	if !o.matchScheme(u) {
+		return false
+	}
+
+	if !o.matchHostname(u) {
+		return false
+	}
+
+	if !o.matchPort(u) {
+		return false
+	}
+
+	return true
+}
+
+func (o *origin) matchScheme(u *url.URL) bool {
+	// If protocol is implicit, http: or https: is allowed.
+	if o.Protocol == "" {
+		if u.Scheme == "http" || u.Scheme == "https" {
+			return true
 		}
 	}
 
+	// If protocol is explicit, perform an exact match.
+	if o.Protocol != "" {
+		if o.Protocol == u.Scheme {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (o *origin) matchHostname(u *url.URL) bool {
 	firstRune, _ := utf8.DecodeRuneInString(u.Hostname())
 	if firstRune == utf8.RuneError {
 		return false
@@ -65,28 +90,35 @@ func (o *origin) MatchOrigin(s string) bool {
 		}
 	}
 
-	actualPort := u.Port()
-	expectedPort := o.Port
-	if u.Scheme == "http" {
-		if actualPort == "" {
-			actualPort = "80"
+	return true
+}
+
+func (o *origin) matchPort(u *url.URL) bool {
+	if o.isDefaultPort() {
+		if isDefaultPort(u) {
+			return true
 		}
-		if expectedPort == "" {
-			expectedPort = "80"
-		}
-	} else if u.Scheme == "https" {
-		if actualPort == "" {
-			actualPort = "443"
-		}
-		if expectedPort == "" {
-			expectedPort = "443"
-		}
-	}
-	if actualPort != expectedPort {
-		return false
 	}
 
-	return true
+	if o.Port == u.Port() {
+		return true
+	}
+
+	return false
+}
+
+func (o *origin) isDefaultPort() bool {
+	if o.Port == "" {
+		return true
+	}
+	if o.Protocol == "http" {
+		return o.Port == "" || o.Port == "80"
+	}
+	if o.Protocol == "https" {
+		return o.Port == "" || o.Port == "443"
+	}
+
+	return false
 }
 
 func (o *origin) String() string {
@@ -105,6 +137,18 @@ func (o *origin) String() string {
 		out += ":" + o.Port
 	}
 	return out
+}
+
+func isDefaultPort(u *url.URL) bool {
+	port := u.Port()
+	if u.Scheme == "http" {
+		return port == "" || port == "80"
+	}
+	if u.Scheme == "https" {
+		return port == "" || port == "443"
+	}
+
+	return port == ""
 }
 
 type T struct {
@@ -223,17 +267,23 @@ func parseHost(s string) []string {
 func parseSingle(s string) (*origin, error) {
 	o := origin{}
 
-	if strings.HasPrefix(s, "http://") {
-		o.Protocol = "http"
-		s = strings.TrimPrefix(s, "http://")
-	} else if strings.HasPrefix(s, "https://") {
-		o.Protocol = "https"
-		s = strings.TrimPrefix(s, "https://")
+	u, err := url.Parse(s)
+	needParseAgain := (
+	// Detect if we are parsing something like "[::1]"
+	err != nil ||
+		// Detect if we are parsing something like "localhost"
+		(u.Scheme == "" && u.Host == "" && !strings.HasPrefix(u.Path, "/")) ||
+		// Detect if we are parsing somethign like "localhost:3000"
+		u.Opaque != "")
+	if needParseAgain {
+		u, err = url.Parse(fmt.Sprintf("https://%s", s))
 	}
-
-	u, err := url.Parse(fmt.Sprintf("https://%v", s))
 	if err != nil {
 		return nil, err
+	}
+	if !needParseAgain {
+		// We only set o.Protocol when we have no guessing.
+		o.Protocol = u.Scheme
 	}
 
 	o.Port = u.Port()
