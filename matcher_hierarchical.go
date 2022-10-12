@@ -132,7 +132,7 @@ func parseHierarchical(s string) (*hierarchicalMatcher, error) {
 		u, err = url.Parse(fmt.Sprintf("https://%s", s))
 	}
 	if err != nil {
-		return nil, err
+		return nil, errTryNextParser
 	}
 	if !needParseAgain {
 		// We only set o.Protocol when we have no guessing.

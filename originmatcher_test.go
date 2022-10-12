@@ -248,6 +248,15 @@ func TestAll(t *testing.T) {
 			"tauri://localhost:80",
 			"tauri://localhost:443",
 		}},
+
+		{"com.myapp:opaque", []string{
+			"com.myapp:opaque",
+		}, []string{
+			"http://localhost",
+			"http://localhost:80",
+			"https://localhost",
+			"https://localhost:443",
+		}},
 	}
 	for _, c := range cases {
 		o, err := Parse(c.input)

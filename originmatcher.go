@@ -1,9 +1,12 @@
 package originmatcher
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+var errTryNextParser = errors.New("try next parser")
 
 type matcher interface {
 	MatchOrigin(s string) bool
@@ -35,12 +38,28 @@ func (t *T) MatchOrigin(s string) bool {
 	return false
 }
 
-func parseSingle(s string) (matcher, error) {
-	if s == "*" {
-		return wildcardMatcher{}, nil
+func parseSingle(s string) (m matcher, err error) {
+	m, err = parseWildcard(s)
+	if err == nil {
+		return m, nil
+	}
+	if !errors.Is(err, errTryNextParser) {
+		return nil, err
 	}
 
-	return parseHierarchical(s)
+	// We try hierarchical first so that
+	// input like "localhost:3000" would not be
+	// misunderstood as scheme=localhost; opaque=3000
+	m, err = parseHierarchical(s)
+	if err == nil {
+		return m, nil
+	}
+	if !errors.Is(err, errTryNextParser) {
+		return nil, err
+	}
+
+	m, err = parseOpaque(s)
+	return
 }
 
 // Parse parses s into T, where s is comma-separated origin specs.
