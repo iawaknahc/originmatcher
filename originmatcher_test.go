@@ -313,18 +313,38 @@ func TestNew(t *testing.T) {
 }
 
 func TestLeniency(t *testing.T) {
-	matcher, err := Parse("http://localhost:3000/a?a=b#a")
-	if err != nil {
-		t.Errorf("err: %v\n", err)
+	cases := []struct {
+		input     string
+		matches   []string
+		unmatches []string
+	}{
+		{"http://username:password@localhost/path?query#fragment", []string{
+			"http://localhost",
+			"http://localhost:80",
+			"http://anotheruser:secret@localhost/root?q#f",
+		}, []string{
+			"https://localhost",
+			"https://localhost:80",
+			"https://localhost:443",
+		}},
 	}
 
-	b := matcher.MatchOrigin("http://localhost:3000/b")
-	if !b {
-		t.Errorf("should match\n")
-	}
-
-	if matcher.String() != "http://localhost:3000" {
-		t.Errorf("%v != %v", matcher.String(), "http://localhost:3000")
+	for _, c := range cases {
+		o, err := Parse(c.input)
+		if err != nil {
+			t.Errorf("err: %v\n", err)
+		} else {
+			for _, origin := range c.matches {
+				if !o.MatchOrigin(origin) {
+					t.Errorf("expected match: %v %v\n", o.String(), origin)
+				}
+			}
+			for _, origin := range c.unmatches {
+				if o.MatchOrigin(origin) {
+					t.Errorf("expected unmatch: %v %v\n", o.String(), origin)
+				}
+			}
+		}
 	}
 }
 
