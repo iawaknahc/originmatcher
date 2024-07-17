@@ -263,6 +263,14 @@ func TestAll(t *testing.T) {
 		}, []string{
 			"https://example.com",
 		}},
+
+		{"https://1*.example.com", []string{
+			"https://1.example.com",
+			"https://12.example.com",
+			"https://1a.example.com",
+		}, []string{
+			"https://example.com",
+		}},
 	}
 	for _, c := range cases {
 		o, err := Parse(c.input)
