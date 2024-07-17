@@ -74,7 +74,7 @@ func parseHost(s string) []string {
 
 // assume s is a valid label
 func labelToRegexpSource(s string) string {
-	leading := "[a-zA-Z]"
+	leading := "[a-zA-Z0-9]"
 	middle := "[-a-zA-Z0-9]*"
 	trailing := "[a-zA-Z0-9]?"
 	b := []byte(s)
@@ -208,15 +208,17 @@ func (o *hierarchicalMatcher) matchHostname(u *url.URL) bool {
 	if firstRune == utf8.RuneError {
 		return false
 	}
-	if strings.HasPrefix(u.Host, "[") {
-		// IPv6
-		if u.Hostname() != o.IPv6 {
-			return false
-		}
-	} else if firstRune >= '0' && firstRune <= '9' {
-		// IPv4
-		if u.Hostname() != o.IPv4 {
-			return false
+
+	hostname := u.Hostname()
+	if ip := net.ParseIP(hostname); ip != nil {
+		if ip.To4() != nil {
+			if hostname != o.IPv4 {
+				return false
+			}
+		} else {
+			if hostname != o.IPv6 {
+				return false
+			}
 		}
 	} else {
 		if o.LabelsRegexp == nil || !o.LabelsRegexp.MatchString(u.Hostname()) {

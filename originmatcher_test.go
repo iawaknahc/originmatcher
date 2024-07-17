@@ -10,9 +10,9 @@ func TestRegexp(t *testing.T) {
 		expected string
 	}{
 		{"localhost", `^localhost$`},
-		{"*.example.com", `^[a-zA-Z][-a-zA-Z0-9]*[a-zA-Z0-9]?\.example\.com$`},
+		{"*.example.com", `^[a-zA-Z0-9][-a-zA-Z0-9]*[a-zA-Z0-9]?\.example\.com$`},
 		{"a*.example.com", `^a[-a-zA-Z0-9]*[a-zA-Z0-9]?\.example\.com$`},
-		{"*a.example.com", `^([a-zA-Z][-a-zA-Z0-9]*)?a\.example\.com$`},
+		{"*a.example.com", `^([a-zA-Z0-9][-a-zA-Z0-9]*)?a\.example\.com$`},
 	}
 	for _, c := range cases {
 		labels := parseHost(c.input)
