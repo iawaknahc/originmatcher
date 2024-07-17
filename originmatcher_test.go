@@ -257,6 +257,12 @@ func TestAll(t *testing.T) {
 			"https://localhost",
 			"https://localhost:443",
 		}},
+
+		{"https://10ten.example.com", []string{
+			"https://10ten.example.com",
+		}, []string{
+			"https://example.com",
+		}},
 	}
 	for _, c := range cases {
 		o, err := Parse(c.input)
